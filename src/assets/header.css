@@ -1,0 +1,509 @@
+
+.container.left,
+.container.right
+{
+    display: flex;
+    flex-direction: row;
+    gap: var(--headerItemsGap);
+    align-items: flex-end;
+    overflow: visible;
+}
+
+body
+{
+    font-family: "Montserrat", sans-serif;
+    font-weight: 600;
+    color: var(--color_09);
+    background-color: var(--color_00);
+    padding: 50px;
+    margin: auto;
+}
+
+a
+{
+    text-decoration: none;
+}
+
+button.button
+{
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+.container
+{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-content: flex-start;
+    justify-content: flex-start;
+    align-items: flex-start;
+    position: relative;
+}
+
+.container.textHelper
+{
+    cursor: inherit;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.container.textHelper .separator
+{
+    color: var(--color_04);
+}
+
+.containerIcon
+{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.containerIcon .lang-flag-img
+{
+    display: block;
+    object-fit: contain;
+}
+
+.helper
+{
+    width: auto;
+    height: 0px;
+    visibility: hidden;
+    background-color: var(--color_10);
+}
+
+.container-text
+{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.container-text .text
+{
+    color: var(--color_00);
+    text-decoration: none;
+}
+
+@property --angle
+{
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: true;
+}
+
+@property --sizeOffset
+{
+    syntax: "<length>";
+    initial-value: 0px;
+    inherits: true;
+}
+
+@keyframes rotation
+{
+    to
+    {
+        --angle: 110deg;
+    }
+}
+
+.button
+{
+    position: relative;
+    rotate: 0deg;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: fit-content;
+    height: fit-content;
+    min-height: 35px;
+    gap: 6px;
+
+    cursor: pointer;
+
+    color: white;
+}
+
+.button .stroke
+{
+    --sizeOffset: -1px;
+
+    opacity: 1;
+    pointer-events: none;
+
+    z-index: -2;
+    position: absolute;
+    top: var(--sizeOffset);
+    bottom: var(--sizeOffset);
+    left: var(--sizeOffset);
+    right: var(--sizeOffset);
+
+    background: red;
+}
+
+.button .fill
+{
+    --sizeOffset: 0px;
+
+    z-index: -1;
+    position: absolute;
+    top: var(--sizeOffset);
+    bottom: var(--sizeOffset);
+    left: var(--sizeOffset);
+    right: var(--sizeOffset);
+
+    background: black;
+}
+
+.button .raycast
+{
+    --sizeOffset: calc(var(--headerItemsGap) / -2);
+
+    opacity: 0;
+    pointer-events: visible;
+
+    z-index: 1;
+    position: absolute;
+    top: calc(var(--sizeOffset) - 5px);
+    bottom: calc(var(--sizeOffset) - 5px);
+    left: var(--sizeOffset);
+    right: var(--sizeOffset);
+
+    background-color: greenyellow;
+}
+
+.button.donate .fill
+{
+    background: var(--gradientBlue_02);
+}
+
+.button.donate .stroke
+{
+    --sizeOffset: 1px;
+
+    opacity: 0;
+
+    background: var(--gradientBlue_01);
+
+    transition-property: top, bottom, left, right, opacity;
+    transition-duration: .3s;
+
+    transition-timing-function: var(--easing_ExtremeInOut);
+}
+
+.button.donate .raycast
+{
+    top: calc(var(--sizeOffset) - 30px);
+}
+
+.button.logo .stroke
+{
+    --sizeOffset: 0px;
+    opacity: 0;
+
+    background: var(--gradientGreen_02);
+
+    transition-property: top, bottom, left, right, opacity;
+    transition-duration: .3s;
+
+    transition-timing-function: var(--easing_ExtremeInOut)
+}
+
+.button.logo .fill
+{
+    background: var(--gradientGreen_01);
+}
+
+.button.logo .raycast
+{
+    left: calc(var(--sizeOffset) - 5px);
+}
+
+.button.logo .container.textHelper
+{
+    gap: 4px;
+}
+
+.button:has(.raycast:hover) .stroke
+{
+    opacity: 1;
+    --sizeOffset: -3px;
+}
+
+.button.social:has(.raycast:hover) .stroke
+{
+    opacity: 0;
+    --sizeOffset: 0px;
+}
+
+.button.about .fill,
+.button.login .fill,
+.button.language .fill
+{
+    --sizeOffset: 10px;
+    opacity: 0;
+    background: var(--color_00);
+
+    transition-property: top, bottom, left, right, opacity;
+    transition-duration: .3s;
+    transition-delay: .03s;
+    transition-timing-function: var(--easing_ExtremeInOut);
+
+}
+
+.button.about:has(.raycast:hover) .fill,
+.button.login:has(.raycast:hover) .fill
+{
+    opacity: 1;
+    --sizeOffset: -6px;
+}
+
+.button.about .stroke,
+.button.login .stroke,
+.button.language .stroke
+{
+    --sizeOffset: 10px;
+    opacity: 0;
+
+    background: var(--gradientWhite_01);
+
+    transition-property: top, bottom, left, right, opacity;
+    transition-duration: .2s;
+    transition-timing-function: var(--easing_ExtremeInOut),
+    var(--easing_ExtremeInOut),
+    var(--easing_ExtremeInOut),
+    var(--easing_ExtremeInOut),
+    ease-in-out;
+}
+
+.button.about:has(.raycast:hover) .stroke,
+.button.login:has(.raycast:hover) .stroke
+{
+    opacity: 1;
+    --sizeOffset: -6px;
+}
+
+.button.about .text,
+.button.login .text,
+.button.language .text
+{
+    color: var(--color_08);
+    transition-property: color;
+    transition-duration: .1s;
+    transition-timing-function: ease-in-out;
+}
+
+.button.about:has(.raycast:hover) .text,
+.button.login:has(.raycast:hover) .text,
+.button.language:has(.raycast:hover) .text
+{
+    color: var(--color_10);
+}
+
+.button.language:has(.raycast:hover) .stroke
+{
+    opacity: 1;
+    --sizeOffset: -6px;
+}
+
+.button.language:has(.raycast:hover) .fill
+{
+    opacity: 1;
+    --sizeOffset: -4px;
+}
+
+.button.social:has(.raycast:hover) .containerIcon
+{
+    scale: 1.3;
+    rotate: 6deg;
+}
+
+.button.social .containerIcon
+{
+    zoom: 1.5;
+    scale: 1;
+    rotate: 0deg;
+
+    transition-property: scale, rotate;
+    transition-duration: .2s;
+    transition-timing-function: var(--easing_OverheadOut);
+}
+
+.button.donate
+{
+    gap: 4px;
+
+    font-size: 20px;
+    font-weight: 700;
+    padding: 4px 12px;
+
+    color: var(--color_10);
+}
+
+.button.logo
+{
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1;
+
+    padding: 5px 11px;
+
+    color: var(--color_00);
+}
+
+.button.logo
+{
+    overflow: visible;
+}
+
+.button.logo .containerIcon.imageIcon
+{
+    position: absolute;
+    right: -25px;
+    bottom: -15px;
+    width: 156px;
+    height: 75px;
+    pointer-events: none;
+    z-index: 1;
+    
+    /* Обрезка по нижней границе лого */
+    clip-path: inset(0 0 15px 0);
+    transition: clip-path .2s var(--easing_OverheadOut);
+}
+
+.button.logo:has(.raycast:hover) .containerIcon.imageIcon
+{
+    /* При ховере показываем низ */
+    clip-path: inset(0 0 0 0);
+}
+
+/* Анимация изображения внутри - как у Discord/Telegram */
+.button.logo .containerIcon.imageIcon .logo-image
+{
+    transform-origin: 70% 80%;
+    scale: 1;
+    rotate: 0deg;
+    transition: scale .2s var(--easing_OverheadOut), rotate .2s var(--easing_OverheadOut);
+}
+
+.button.logo:has(.raycast:hover) .containerIcon.imageIcon .logo-image
+{
+    scale: 1.3;
+    rotate: 6deg;
+}
+
+.button.logo .containerIcon.imageIcon svg
+{
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+.button.about,
+.button.login,
+.button.language,
+.button.social
+{
+    font-size: 20px;
+    font-weight: 700;
+
+    padding: 4px 12px;
+
+    color: var(--color_09);
+
+    height: 35px;
+
+}
+
+.button.social .stroke
+{
+    --sizeOffset: 20px;
+    opacity: 0;
+
+    background: var(--gradientGreen_02);
+
+    transition-property: top, bottom, left, right, opacity;
+    transition-duration: .2s, .2s, .2s, .2s, .2s;
+    transition-timing-function: var(--easing_ExtremeInOut),
+    var(--easing_ExtremeInOut),
+    var(--easing_ExtremeInOut),
+    var(--easing_ExtremeInOut),
+    ease-in-out;
+
+}
+
+.button.about .raycast,
+.button.login .raycast,
+.button.language .raycast,
+.button.social .raycast
+{
+    opacity: 0;
+    top: calc(var(--sizeOffset) - 5px);
+    bottom: calc(var(--sizeOffset) - 5px);
+}
+
+.container.other
+{
+    gap: 4px
+}
+
+.button.about .raycast
+{
+    right: -2px;
+}
+
+.button.login .raycast
+{
+    left: -2px;
+}
+
+.container.socials
+{
+    gap: 4px
+}
+
+.button.social.telegram .raycast
+{
+    left: -2px;
+}
+
+.button.social.discord .raycast
+{
+    right: -2px;
+}
+
+.button.about .container.textHelper,
+.button.login .container.textHelper,
+.button.language .container.textHelper,
+.button.social .container.textHelper
+{
+    gap: 2px;
+}
+
+.discordIcon path
+{
+    fill: royalblue;
+}
+
+.telegramIcon path
+{
+    fill: deepskyblue;
+}
+.button.donate .containerIcon svg
+{
+    viewBox: 0 0 22 17 !important;
+    width: 22.5px !important;
+    height: 17px !important;
+}
+
+.button.donate .containerIcon path
+{
+    fill: white !important;
+}

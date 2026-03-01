@@ -1,0 +1,126 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+
+:root {
+    font-family: "Montserrat", sans-serif;
+    --color_00: #000000;
+    --color_01: #1a1a1a;
+    --color_02: #333333;
+    --color_03: #4d4d4d;
+    --color_04: #666666;
+    --color_05: #808080;
+    --color_06: #999999;
+    --color_07: #b3b3b3;
+    --color_08: #cccccc;
+    --color_09: #e6e6e6;
+    --color_10: #ffffff;
+
+    --fontSize_01: 23px;
+    --fontSize_02: 12px;
+    --fontSize_03: 10px;
+    --fontSize_04: 8px;
+
+    --easing_OverheadOut: cubic-bezier(0, 0, 0, 2);
+    --easing_ExtremeInOut: cubic-bezier(1, 0, 0, 1);
+
+    --headerItemsGap: 30px;
+
+    --gradientBlue_01: conic-gradient(
+            from 250deg at -39% -37%,
+            rgba(66, 210, 255, 1) 0deg,
+            rgba(74, 0, 186, 1) 28.8deg,
+            rgba(60, 115, 255, 1) 54deg,
+            rgba(74, 0, 186, 1) 144deg,
+            rgba(66, 210, 255, 1) 201.6deg,
+            rgba(74, 0, 186, 1) 334.8deg,
+            rgba(60, 115, 255, 1) 349.2deg,
+            rgba(66, 210, 255, 1) 360deg);
+
+    --gradientBlue_02: conic-gradient(
+            from 110deg at -39% -37%,
+            rgba(66, 210, 255, 1) 0deg,
+            rgba(74, 0, 186, 1) 28.8deg,
+            rgba(60, 115, 255, 1) 54deg,
+            rgba(74, 0, 186, 1) 144deg,
+            rgba(66, 210, 255, 1) 201.6deg,
+            rgba(74, 0, 186, 1) 334.8deg,
+            rgba(60, 115, 255, 1) 349.2deg,
+            rgba(66, 210, 255, 1) 360deg);
+
+    --gradientGreen_01: conic-gradient(
+            from 250deg at 109% -9%,
+            rgba(219, 255, 0, 1) 0deg,
+            rgba(219, 255, 0, 1) 0deg,
+            rgba(0, 186, 19, 1) 21.6deg,
+            rgba(0, 255, 93, 1) 97.2deg,
+            rgba(123, 219, 0, 1) 147.6deg,
+            rgba(219, 255, 0, 1) 198deg,
+            rgba(0, 186, 19, 1) 244.8deg,
+            rgba(0, 255, 94, 1) 288deg,
+            rgba(123, 219, 0, 1) 324deg,
+            rgba(219, 255, 0, 1) 360deg,
+            rgba(219, 255, 0, 1) 360deg);
+
+    --gradientGreen_02: conic-gradient(
+            from 120deg at 106% -9%,
+            rgba(219, 255, 0, 1) 0deg,
+            rgba(219, 255, 0, 1) 0deg,
+            rgba(0, 186, 19, 1) 21.6deg,
+            rgba(0, 255, 93, 1) 97.2deg,
+            rgba(123, 219, 0, 1) 147.6deg,
+            rgba(219, 255, 0, 1) 198deg,
+            rgba(0, 186, 19, 1) 244.8deg,
+            rgba(0, 255, 94, 1) 288deg,
+            rgba(123, 219, 0, 1) 324deg,
+            rgba(219, 255, 0, 1) 360deg,
+            rgba(219, 255, 0, 1) 360deg);
+
+    --gradientWhite_01: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(230,230,230,0.95) 100%);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    /* padding задается в header.css */
+}
+
+header
+{
+    display: flex;
+    flex-direction: row;
+    gap: var(--headerItemsGap);
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 35px;
+    width: 1200px;
+    margin: auto;
+}
+
+#noise-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw; 
+        height: 100vh; 
+        pointer-events: none;
+        z-index: 9999; 
+      }
+
+::-webkit-scrollbar {
+        width: 0px;
+        background: rgba(255, 255, 255, 0.0);
+}
