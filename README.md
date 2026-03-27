@@ -71,7 +71,7 @@ const HeartSvg = `<svg viewBox="0 0 22 17" xmlns="http://www.w3.org/2000/svg" wi
 
 <Button
   Url="/donate"
-  SubClass="donate"
+  SubClass="example"
   Svg={HeartSvg}
   Text='<span style="letter-spacing: 1px;">T</span>he bu<span style="letter-spacing: 0.3px;">t</span>ton'
 />

@@ -174,31 +174,37 @@ button.button
     left: var(--sizeOffset);
     right: var(--sizeOffset);
 
-    background-color: greenyellow;
+    background-color: #abff2e;
 }
 
-.button.donate .fill
+.button.example .fill
 {
-    background: var(--gradientBlue_02);
+    --sizeOffset: 4px;
+    background: #333333;
+    border-radius: 18.5px;
 }
 
-.button.donate .stroke
+.button.example .stroke
 {
-    --sizeOffset: 1px;
+    --sizeOffset: 2px;
 
     opacity: 0;
 
-    background: var(--gradientBlue_01);
+    border: 2px solid #abff2e;
+    background: transparent;
+    border-radius: 21.5px;
 
     transition-property: top, bottom, left, right, opacity;
-    transition-duration: .3s;
+    transition-duration: .16s;
 
-    transition-timing-function: var(--easing_ExtremeInOut);
+    transition-timing-function: ease;
+
 }
 
-.button.donate .raycast
+.button.example .raycast
 {
-    top: calc(var(--sizeOffset) - 30px);
+    top: calc(var(--sizeOffset) - 10px);
+    bottom: calc(var(--sizeOffset) - 10px);
 }
 
 .button.logo .stroke
@@ -229,10 +235,16 @@ button.button
     gap: 4px;
 }
 
-.button:has(.raycast:hover) .stroke
+.button:not(.example):has(.raycast:hover) .stroke
 {
     opacity: 1;
     --sizeOffset: -3px;
+}
+
+.button.example:has(.raycast:hover) .stroke
+{
+    opacity: 1;
+    --sizeOffset: 0px;
 }
 
 .button.social:has(.raycast:hover) .stroke
@@ -334,15 +346,33 @@ button.button
     transition-timing-function: var(--easing_OverheadOut);
 }
 
-.button.donate
+.button.example
 {
-    gap: 4px;
+    width: 219px;
+    min-height: 45px;
+    height: 45px;
+    gap: 11px;
 
     font-size: 20px;
-    font-weight: 700;
-    padding: 4px 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0 20px;
 
-    color: var(--color_10);
+    color: #ffffff;
+}
+
+.button.example .container.textHelper
+{
+    gap: 0px;
+}
+
+.button.example .text
+{
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: #ffffff;
+    white-space: nowrap;
 }
 
 .button.logo
@@ -496,14 +526,13 @@ button.button
 {
     fill: deepskyblue;
 }
-.button.donate .containerIcon svg
+.button.example .containerIcon svg
 {
-    viewBox: 0 0 22 17 !important;
     width: 22.5px !important;
     height: 17px !important;
 }
 
-.button.donate .containerIcon path
+.button.example .containerIcon path
 {
-    fill: white !important;
+    fill: #abff2e !important;
 }

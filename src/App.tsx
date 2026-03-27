@@ -8,9 +8,9 @@ function App() {
     <div className="app">
       <Button
         Url=""
-        SubClass="donate"
+        SubClass="example"
         Svg={HeartSvg}
-        Text='<span style = "letter-spacing: 1px;">T</span>he bu<span style = "letter-spacing: 0.3px;">t</span>ton'
+        Text='Simple bu<span style="letter-spacing: 0.3px;">t</span>ton'
       />
     </div>
   )
