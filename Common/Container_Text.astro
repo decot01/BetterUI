@@ -1,0 +1,37 @@
+---
+export let text: string = "";
+export let url: string = "";
+export let textSize: number = 16;
+export let textWeight: number = 600;
+---
+
+<div class="container-text">
+    <a class="text" href={url}>{text}</a>
+    <div class="helper"></div>
+</div>
+
+<style>
+    .container-text
+    {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .helper 
+    {
+        height:0px;
+        with:100%;
+        color: #00000000;
+    }
+
+    .text 
+    {
+        font-size: {textSize};
+        font-weight: {textWeight};
+        color: #000;
+
+        text-decoration: none;
+    }
+
+</style>

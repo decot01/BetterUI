@@ -1,0 +1,28 @@
+﻿---
+import TextHelper from "./TextHelper.astro";
+
+const SubClass: string = Astro.props.SubClass;
+const Text: string = Astro.props.Text;
+const Url: string = Astro.props.Url;
+const Svg: string = Astro.props.Svg;
+const ImageUrl: string = Astro.props.ImageUrl;
+---
+
+<a class = {`button ${SubClass ?? ''}`} href = {Url}>
+    <div class = "stroke"></div>
+    <div class = "fill"></div>
+    <div class = "raycast"></div>
+
+    {Svg != null &&
+            <div class = "containerIcon" set:html = {Svg}></div>
+    }
+
+    {ImageUrl != null &&
+            <div class = "containerIcon imageIcon" set:html = {imageSvg}></div>
+    }
+
+    {Text != null &&
+            <TextHelper Text = {Text}/>
+    }
+
+</a>

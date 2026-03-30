@@ -1,0 +1,599 @@
+---
+// Гибкий компонент поиска с триграммами и без учета регистра
+import { i18n, initI18n } from '../../i18n';
+
+interface Props {
+    placeholder?: string;
+    onSearch?: (value: string) => void;
+    value?: string;
+    class?: string;
+    inputClass?: string;
+    iconClass?: string;
+    data?: any[];
+    searchField?: string | ((item: any) => string);
+    threshold?: number;
+    showAutocomplete?: boolean;
+}
+
+const currentLocale = (Astro.locals as any)?.lang || 'ru';
+await initI18n(currentLocale);
+const t = i18n.t;
+
+const { 
+    placeholder = t('common.search_placeholder'),
+    onSearch,
+    value = "",
+    class: className = "",
+    inputClass = "",
+    iconClass = "",
+    data,
+    searchField = "name",
+    threshold = 0.2,
+    showAutocomplete = true
+} = Astro.props;
+---
+
+<div 
+    class={`search-container ${className}`}
+    data-items={data ? JSON.stringify(data) : undefined}
+    data-search-field={typeof searchField === 'string' ? searchField : undefined}
+    data-threshold={threshold?.toString()}
+    data-show-autocomplete={showAutocomplete.toString()}
+>
+    <svg class={`search-icon ${iconClass}`} width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12.7266" cy="12.7279" r="7.5" transform="rotate(45 12.7266 12.7279)" stroke="var(--color_04)" stroke-width="4"/>
+        <path d="M18.3848 18.3848L21.3848 21.3848" stroke="var(--color_04)" stroke-width="4"/>
+    </svg>
+    <input 
+        type="text"
+        class={`search-input ${inputClass}`}
+        placeholder={placeholder}
+        value={value}
+        autocomplete="off"
+    />
+    {showAutocomplete && <div class="search-autocomplete" data-autocomplete="true"></div>}
+</div>
+
+<style>
+    .search-container {
+        position: relative;
+        width: 400px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        background-color: var(--color_00);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 5px;
+        width: 16px;
+        height: 16px;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .search-input {
+        width: 100%;
+        height: 100%;
+        padding: 0 10px 0 26px;
+        background-color: transparent;
+        border: 1px solid var(--color_03);
+        color: var(--color_10, #FFFFFF);
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 100%;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.3s var(--easing_ExtremeInOut, ease);
+    }
+
+    .search-input::placeholder {
+        color: var(--color_08);
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 400;
+        font-size: 16px;
+    }
+
+    .search-input:hover {
+        border-color: var(--color_04);
+    }
+
+    .search-input:focus {
+        border-color: var(--color_04);
+    }
+
+    /* Dropdown подсказок — стиль контекстного меню */
+    .search-autocomplete {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 1px;
+        background-color: var(--color_00, #000000);
+        border: 1px solid var(--color_03, #4d4d4d);
+        padding: 6px;
+        max-height: 260px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        user-select: none;
+        opacity: 0;
+        transition: opacity 0.2s var(--easing_ExtremeInOut, ease);
+    }
+
+    .search-autocomplete.visible {
+        display: block;
+        opacity: 1;
+    }
+
+    .search-autocomplete-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        color: var(--color_10, #FFFFFF);
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background-color 0.15s var(--easing_ExtremeInOut, ease);
+    }
+
+    .search-autocomplete-item:hover,
+    .search-autocomplete-item.selected {
+        background-color: var(--color_01, #1a1a1a);
+    }
+
+    .search-autocomplete-separator {
+        border: none;
+        height: 1px;
+        background-color: var(--color_02, #333333);
+        margin: 6px 0;
+    }
+
+    .search-autocomplete-empty {
+        padding: 8px 12px;
+        color: var(--color_04, #666666);
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 500;
+        font-size: 14px;
+        text-align: center;
+    }
+</style>
+
+<script>
+    // Утилиты для поиска с триграммами
+    function generateTrigrams(text: string): string[] {
+        const normalized = text.toLowerCase().trim();
+        if (normalized.length === 0) return [];
+        
+        const trigrams: string[] = [];
+        const padded = `  ${normalized}  `;
+        
+        for (let i = 0; i <= padded.length - 3; i++) {
+            trigrams.push(padded.substring(i, i + 3));
+        }
+        
+        return trigrams;
+    }
+
+    function trigramSimilarity(query: string, text: string): number {
+        if (!query || !text) return 0;
+        
+        const queryTrigrams = generateTrigrams(query);
+        const textTrigrams = generateTrigrams(text);
+        
+        if (queryTrigrams.length === 0 || textTrigrams.length === 0) return 0;
+        
+        const querySet = new Set(queryTrigrams);
+        const textSet = new Set(textTrigrams);
+        
+        let intersection = 0;
+        querySet.forEach(trigram => {
+            if (textSet.has(trigram)) {
+                intersection++;
+            }
+        });
+        
+        const union = querySet.size + textSet.size - intersection;
+        return union > 0 ? intersection / union : 0;
+    }
+
+    function searchWithTrigrams(items: any[], query: string, getSearchText: (item: any) => string, threshold: number = 0.2) {
+        if (!query || query.trim().length === 0) {
+            return items.map(item => ({ item, similarity: 1, exactMatch: true }));
+        }
+        
+        const normalizedQuery = query.trim().toLowerCase();
+        // Нормализуем запрос: убираем лишние пробелы, приводим к нижнему регистру
+        const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 0);
+        const results: Array<{ item: any; similarity: number; exactMatch: boolean; startsWith: boolean }> = [];
+        
+        for (const item of items) {
+            const searchText = getSearchText(item);
+            if (!searchText || searchText.length === 0) continue;
+            
+            const normalizedText = searchText.toLowerCase();
+            
+            // Точное совпадение
+            const exactMatch = normalizedText === normalizedQuery;
+            
+            // Начинается с запроса
+            const startsWith = normalizedText.startsWith(normalizedQuery);
+            
+            // Содержит запрос целиком
+            const containsQuery = normalizedText.includes(normalizedQuery);
+            
+            // Проверяем, содержит ли текст все слова из запроса
+            const containsAllWords = queryWords.every(word => normalizedText.includes(word));
+            
+            // Проверяем, начинается ли текст с первого слова запроса
+            const startsWithFirstWord = queryWords.length > 0 && normalizedText.startsWith(queryWords[0]);
+            
+            // Вычисляем схожесть через триграммы
+            const similarity = trigramSimilarity(query, searchText);
+            
+            // Более гибкий порог для коротких запросов
+            const dynamicThreshold = query.length <= 3 ? Math.max(0.1, threshold * 0.5) : threshold;
+            
+            // Проверяем частичное совпадение слов (для случаев типа "силки" -> "Силки")
+            const searchWords = normalizedText.split(/\s+/);
+            const queryWordsInText = queryWords.filter(qw => 
+                searchWords.some(sw => sw.includes(qw) || qw.includes(sw))
+            );
+            const hasPartialWordMatch = queryWordsInText.length > 0 && 
+                                       queryWordsInText.length >= Math.ceil(queryWords.length * 0.5);
+            
+            // Принимаем результат если:
+            // 1. Точное совпадение
+            // 2. Начинается с запроса
+            // 3. Содержит запрос целиком
+            // 4. Содержит все слова из запроса
+            // 5. Есть частичное совпадение слов (хотя бы половина слов)
+            // 6. Схожесть выше порога
+            if (exactMatch || startsWith || containsQuery || containsAllWords || hasPartialWordMatch || similarity >= dynamicThreshold) {
+                // Вычисляем приоритет для сортировки
+                let priority = 0;
+                if (exactMatch) priority = 1000;
+                else if (startsWith) priority = 800;
+                else if (startsWithFirstWord) priority = 600;
+                else if (containsQuery) priority = 500;
+                else if (containsAllWords) priority = 400;
+                else priority = Math.round(similarity * 300);
+                
+                results.push({
+                    item,
+                    similarity: priority / 1000, // Нормализуем для совместимости
+                    exactMatch,
+                    startsWith
+                });
+            }
+        }
+        
+        results.sort((a, b) => {
+            // Сначала точные совпадения
+            if (a.exactMatch && !b.exactMatch) return -1;
+            if (!a.exactMatch && b.exactMatch) return 1;
+            
+            // Затем начинающиеся с запроса
+            if (a.startsWith && !b.startsWith) return -1;
+            if (!a.startsWith && b.startsWith) return 1;
+            
+            // Затем по схожести
+            return b.similarity - a.similarity;
+        });
+        
+        return results;
+    }
+
+    // Функциональность поиска
+    if (typeof window !== 'undefined') {
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchContainers = document.querySelectorAll('.search-container');
+            
+            searchContainers.forEach((searchContainer) => {
+                const searchInput = searchContainer.querySelector('.search-input') as HTMLInputElement;
+                const autocomplete = searchContainer.querySelector('.search-autocomplete') as HTMLElement;
+                const showAutocompleteAttr = searchContainer.getAttribute('data-show-autocomplete');
+                const showAutocomplete = showAutocompleteAttr !== 'false' && showAutocompleteAttr !== null;
+                
+                if (!searchInput) return;
+                if (showAutocomplete && !autocomplete) return;
+                
+                // Получаем данные из data-атрибута если они есть
+                const dataAttr = searchContainer.getAttribute('data-items');
+                const searchFieldAttr = searchContainer.getAttribute('data-search-field');
+                const thresholdAttr = searchContainer.getAttribute('data-threshold');
+                
+                let searchData: any[] = [];
+                let getSearchText: (item: any) => string = (item) => item.name || item.toString();
+                let threshold = thresholdAttr ? parseFloat(thresholdAttr) : 0.2;
+                let selectedIndex = -1;
+                let currentResults: any[] = [];
+                
+                if (dataAttr) {
+                    try {
+                        searchData = JSON.parse(dataAttr);
+                    } catch {
+                    }
+                }
+                
+                if (searchFieldAttr) {
+                    if (searchFieldAttr.includes('.')) {
+                        // Вложенное поле типа "user.name"
+                        const fields = searchFieldAttr.split('.');
+                        getSearchText = (item) => {
+                            let value = item;
+                            for (const field of fields) {
+                                value = value?.[field];
+                            }
+                            return value?.toString() || '';
+                        };
+                    } else {
+                        getSearchText = (item) => {
+                            const fieldValue = item[searchFieldAttr];
+                            if (!fieldValue) return '';
+                            
+                            // Если это строка, возвращаем её
+                            if (typeof fieldValue === 'string') {
+                                return fieldValue;
+                            }
+                            
+                            // Если это объект с полями lines (формат stalcraft-database)
+                            if (fieldValue && typeof fieldValue === 'object') {
+                                if (fieldValue.lines) {
+                                    // Формат: { lines: { ru: "...", en: "..." } }
+                                    return fieldValue.lines.ru || fieldValue.lines.en || 
+                                           Object.values(fieldValue.lines)[0]?.toString() || '';
+                                }
+                                // Пробуем найти строковое значение в объекте
+                                const stringValues = Object.values(fieldValue).filter(v => typeof v === 'string' && v.length > 0);
+                                if (stringValues.length > 0) {
+                                    return stringValues[0] as string;
+                                }
+                            }
+                            
+                            return fieldValue?.toString() || '';
+                        };
+                    }
+                }
+                
+                const displayAutocomplete = (results: any[]) => {
+                    if (!showAutocomplete || !autocomplete) return;
+                    
+                    currentResults = results;
+                    selectedIndex = -1;
+                    
+                    const currentValue = searchInput.value.trim();
+                    if (currentValue.length < 2) {
+                        hideAutocomplete();
+                        return;
+                    }
+                    
+                    if (results.length === 0) {
+                        if (currentValue.length >= 3) {
+                            autocomplete.innerHTML = '<div class="search-autocomplete-empty">Ничего не найдено</div>';
+                            autocomplete.classList.add('visible');
+                        } else {
+                            hideAutocomplete();
+                        }
+                        return;
+                    }
+                    
+                    // Максимум 5 подсказок (экранируем текст от XSS)
+                    const escapeHtml = (s: string) => {
+                        const div = document.createElement('div');
+                        div.textContent = s;
+                        return div.innerHTML;
+                    };
+                    const displayResults = results.slice(0, 5);
+                    autocomplete.innerHTML = displayResults.map((item, index) => {
+                        const text = getSearchText(item);
+                        return `<div class="search-autocomplete-item" data-index="${index}">${escapeHtml(text)}</div>`;
+                    }).join('');
+                    
+                    autocomplete.classList.add('visible');
+                    
+                    // Обработчики кликов
+                    autocomplete.querySelectorAll('.search-autocomplete-item').forEach((item, index) => {
+                        item.addEventListener('click', () => {
+                            selectItem(displayResults[index]);
+                        });
+                    });
+                };
+                
+                const hideAutocomplete = () => {
+                    if (!showAutocomplete || !autocomplete) return;
+                    autocomplete.classList.remove('visible');
+                    selectedIndex = -1;
+                };
+                
+                const selectItem = (item: any) => {
+                    const text = getSearchText(item);
+                    searchInput.value = text;
+                    hideAutocomplete();
+                    
+                    // Отправляем событие с выбранным элементом
+                    const event = new CustomEvent('search', {
+                        detail: { 
+                            value: text,
+                            results: [item],
+                            selected: item
+                        }
+                    });
+                    searchInput.dispatchEvent(event);
+                };
+                
+                // Обработка ввода с debounce
+                let searchTimeout: NodeJS.Timeout;
+                
+                // Поиск: локальный + API, с подсказками
+                const performSearch = async (value: string, showSuggestions: boolean = true) => {
+                    let results: any[] = [];
+                    
+                    // Локальный поиск через триграммы
+                    if (searchData.length > 0 && value.length > 0) {
+                        const searchResults = searchWithTrigrams(searchData, value, getSearchText, threshold);
+                        results = searchResults.map(r => r.item);
+                    }
+                    
+                    // API — всегда вызываем, чтобы подсказки находили все предметы
+                    if (value.length >= 2) {
+                        try {
+                            const lang = document.documentElement.lang || 'ru';
+                            const apiUrl = `/api/stalcraft-items-search.json?q=${encodeURIComponent(value)}&lang=${lang}&limit=20`;
+                            const apiResponse = await fetch(apiUrl);
+                            
+                            if (apiResponse.ok) {
+                                const apiData = await apiResponse.json();
+                                if (apiData.items && Array.isArray(apiData.items) && apiData.items.length > 0) {
+                                    const apiResults = apiData.items;
+                                    // Убираем дубликаты
+                                    const existingIds = new Set(results.map(r => {
+                                        const id = r.itemid || r.id || r.itemId || r.key || '';
+                                        return id.toLowerCase();
+                                    }));
+                                    const newResults = apiResults.filter((item: any) => {
+                                        const id = (item.itemid || item.id || item.itemId || item.key || '').toLowerCase();
+                                        return id && id.length > 0 && !existingIds.has(id);
+                                    });
+                                    results = [...results, ...newResults];
+                                    
+                                    // Кэшируем для будущих быстрых поисков
+                                    if (newResults.length > 0) {
+                                        searchData = [...searchData, ...newResults];
+                                        searchContainer.setAttribute('data-items', JSON.stringify(searchData));
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            // Тихо — API недоступен, работаем с локальными
+                        }
+                    }
+                    
+                    if (showSuggestions && value.length > 0) {
+                        displayAutocomplete(results);
+                    } else {
+                        hideAutocomplete();
+                    }
+                    
+                    // Событие для родительского компонента
+                    const event = new CustomEvent('search', {
+                        detail: { 
+                            value,
+                            results: results.length > 0 ? results : null
+                        }
+                    });
+                    searchInput.dispatchEvent(event);
+                };
+                
+                searchInput.addEventListener('input', (e) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value.trim();
+                    
+                    clearTimeout(searchTimeout);
+                    
+                    if (value.length === 0) {
+                        hideAutocomplete();
+                        const event = new CustomEvent('search', {
+                            detail: { value: '', results: null }
+                        });
+                        searchInput.dispatchEvent(event);
+                        return;
+                    }
+                    
+                    // Минимум 2 символа
+                    if (value.length < 2) {
+                        hideAutocomplete();
+                        return;
+                    }
+                    
+                    // Debounce 400ms — вызываем полный поиск (локальный + API)
+                    searchTimeout = setTimeout(() => {
+                        performSearch(value, true);
+                    }, 400);
+                });
+
+                // Обработка Enter для мгновенного поиска
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        clearTimeout(searchTimeout);
+                        const target = e.target as HTMLInputElement;
+                        const value = target.value.trim();
+                        
+                        // Если есть выбранный элемент в автодополнении, выбираем его
+                        if (selectedIndex >= 0 && currentResults.length > selectedIndex) {
+                            selectItem(currentResults[selectedIndex]);
+                            e.preventDefault();
+                            return;
+                        }
+                        
+                        performSearch(value, false);
+                        hideAutocomplete();
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (showAutocomplete && autocomplete && autocomplete.classList.contains('visible')) {
+                            const items = autocomplete.querySelectorAll('.search-autocomplete-item');
+                            if (items.length > 0) {
+                                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                                items.forEach((item, index) => {
+                                    item.classList.toggle('selected', index === selectedIndex);
+                                });
+                            }
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (showAutocomplete && autocomplete && autocomplete.classList.contains('visible')) {
+                            const items = autocomplete.querySelectorAll('.search-autocomplete-item');
+                            if (items.length > 0) {
+                                selectedIndex = Math.max(selectedIndex - 1, -1);
+                                items.forEach((item, index) => {
+                                    item.classList.toggle('selected', index === selectedIndex);
+                                });
+                            }
+                        }
+                    } else if (e.key === 'Escape') {
+                        hideAutocomplete();
+                    }
+                });
+                
+                // Скрываем автодополнение при клике вне компонента
+                if (showAutocomplete) {
+                    document.addEventListener('click', (e) => {
+                        if (!searchContainer.contains(e.target as Node)) {
+                            hideAutocomplete();
+                        }
+                    });
+                }
+                
+                // Фокус — не показываем подсказки автоматически, только скрываем если были
+                searchInput.addEventListener('focus', () => {
+                    // Не дёргаем подсказками при фокусе — пользователь сам начнёт печатать
+                });
+                
+                // Слушаем событие загрузки данных
+                searchContainer.addEventListener('search-data-loaded', (e: Event) => {
+                    const ev = e as CustomEvent<{ items?: unknown[] }>;
+                    if (ev.detail?.items && Array.isArray(ev.detail.items)) {
+                        searchData = ev.detail.items;
+                        
+                        
+                        searchContainer.setAttribute('data-items', JSON.stringify(searchData));
+                        
+                        // Если есть текст в поле поиска, обновляем результаты
+                        const value = searchInput.value.trim();
+                        if (value.length > 0) {
+                            performSearch(value, true);
+                        }
+                    }
+                });
+            });
+        });
+    }
+</script>
+

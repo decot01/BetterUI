@@ -1,0 +1,364 @@
+---
+const {
+	tabs = [],
+	activeIndex = 0,
+	class: className = '',
+	tabsClass = '',
+	tabClass = '',
+	TabSwitcherSubClass = '',
+	ControlsSubClass = '',
+	TabSubClass = '',
+	TabActiveSubClass = '',
+	ContentSlotSubClass = '',
+	SliderSubClass = '',
+	id,
+	...rest
+} = Astro.props;
+
+const safeTabs = Array.isArray(tabs) ? tabs : [];
+const selectedIndex = Math.max(0, Math.min(activeIndex, safeTabs.length - 1));
+const instanceId = id ?? `tab-switcher-${crypto.randomUUID()}`;
+---
+
+<div
+	class={`tab-switcher ${className} ${TabSwitcherSubClass ?? ''}`.trim()}
+	data-tab-switcher="true"
+	data-active-index={selectedIndex}
+	data-tab-switcher-id={instanceId}
+	{...rest}
+>
+	<div
+		class={`tab-switcher-controls ${tabsClass} ${ControlsSubClass ?? ''}`.trim()}
+	>
+		<div class={`tab-switcher-slider ${SliderSubClass ?? ''}`.trim()} data-tab-slider></div>
+		{safeTabs.map((tab, index) => (
+			<button
+				type="button"
+				class={`tab-switcher-tab ${index === selectedIndex ? 'is-active' : ''} ${tabClass} ${TabSubClass ?? ''} ${index === selectedIndex ? (TabActiveSubClass ?? '') : ''}`.trim()}
+				data-tab-index={index}
+				aria-selected={index === selectedIndex ? 'true' : 'false'}
+			>
+				{tab?.label ?? `Tab ${index + 1}`}
+			</button>
+		))}
+	</div>
+
+	<div
+		class={`tab-switcher-content-slot ${ContentSlotSubClass ?? ''}`.trim()}
+		data-tab-content-slot="true"
+		data-tab-switcher-id={instanceId}
+	></div>
+</div>
+
+<script is:inline>
+	// @ts-nocheck
+	(function() {
+		const initTabSwitcher = (root) => {
+		if (!root || root.dataset.tabInitialized === 'true') return;
+		root.dataset.tabInitialized = 'true';
+
+		const tabs = Array.from(root.querySelectorAll('[data-tab-index]'));
+		const slider = root.querySelector('[data-tab-slider]');
+		const controls = root.querySelector('.tab-switcher-controls');
+		const total = tabs.length;
+		const initial = Number(root.dataset.activeIndex || 0);
+
+		let isDragging = false;
+		let dragStartX = 0;
+		let dragStartOffset = 0;
+		let currentActiveIndex = 0;
+
+		const updateSliderPosition = (index, immediate = false) => {
+			if (!slider || !controls) return;
+			
+			const activeTab = tabs[index];
+			if (!activeTab) return;
+
+			const controlsRect = controls.getBoundingClientRect();
+			const tabRect = activeTab.getBoundingClientRect();
+			
+			const offsetX = tabRect.left - controlsRect.left;
+			const width = tabRect.width;
+
+			if (immediate) {
+				slider.style.transition = 'none';
+			} else {
+				slider.style.transition = '';
+			}
+
+			slider.style.width = `${width}px`;
+			slider.style.transform = `translateX(${offsetX}px)`;
+		};
+
+		const getTabIndexFromPosition = (x) => {
+			if (!controls) return -1;
+			
+			const controlsRect = controls.getBoundingClientRect();
+			const relativeX = x - controlsRect.left;
+			
+			for (let i = 0; i < tabs.length; i++) {
+				const tab = tabs[i];
+				const tabRect = tab.getBoundingClientRect();
+				const tabLeft = tabRect.left - controlsRect.left;
+				const tabRight = tabLeft + tabRect.width;
+				
+				if (relativeX >= tabLeft && relativeX <= tabRight) {
+					return i;
+				}
+			}
+			
+			// Если курсор между табами, находим ближайший
+			let closestIndex = 0;
+			let minDistance = Infinity;
+			
+			for (let i = 0; i < tabs.length; i++) {
+				const tab = tabs[i];
+				const tabRect = tab.getBoundingClientRect();
+				const tabCenter = tabRect.left - controlsRect.left + tabRect.width / 2;
+				const distance = Math.abs(relativeX - tabCenter);
+				
+				if (distance < minDistance) {
+					minDistance = distance;
+					closestIndex = i;
+				}
+			}
+			
+			return closestIndex;
+		};
+
+		const setActive = (index, skipEvent = false) => {
+			if (index === currentActiveIndex && !isDragging) return;
+			
+			currentActiveIndex = index;
+			
+			tabs.forEach((tab, i) => {
+				tab.classList.toggle('is-active', i === index);
+				tab.setAttribute('aria-selected', String(i === index));
+			});
+
+			updateSliderPosition(index);
+
+			if (!skipEvent) {
+				root.dispatchEvent(
+					new CustomEvent('tab-switcher:change', {
+						detail: { index },
+						bubbles: true,
+					}),
+				);
+			}
+		};
+
+		const safeIndex = Number.isFinite(initial)
+			? Math.min(Math.max(initial, 0), Math.max(total - 1, 0))
+			: 0;
+
+		currentActiveIndex = safeIndex;
+
+		// Инициализация позиции слайдера
+		requestAnimationFrame(() => {
+			updateSliderPosition(safeIndex);
+		});
+
+		setActive(safeIndex);
+
+		// Обработчики для перетаскивания слайдера
+		const handleMouseMove = (e) => {
+			if (!isDragging || !slider || !controls) return;
+			
+			const controlsRect = controls.getBoundingClientRect();
+			const deltaX = e.clientX - dragStartX;
+			let newOffset = dragStartOffset + deltaX;
+			
+			// Ограничиваем перемещение в пределах controls
+			const sliderWidth = slider.getBoundingClientRect().width;
+			const minOffset = 0;
+			const maxOffset = controlsRect.width - sliderWidth;
+			newOffset = Math.max(minOffset, Math.min(maxOffset, newOffset));
+			
+			slider.style.transform = `translateX(${newOffset}px)`;
+			
+			// Определяем, над каким табом находится курсор
+			const hoveredIndex = getTabIndexFromPosition(e.clientX);
+			if (hoveredIndex !== -1 && hoveredIndex !== currentActiveIndex) {
+				setActive(hoveredIndex, true);
+			}
+		};
+
+		const handleMouseUp = (e) => {
+			if (!isDragging) return;
+			
+			isDragging = false;
+			if (slider) {
+				slider.style.cursor = 'grab';
+				slider.style.transition = '';
+			}
+			
+			// Финализируем позицию на активном табе
+			updateSliderPosition(currentActiveIndex);
+			
+			// Отправляем событие о смене таба
+			root.dispatchEvent(
+				new CustomEvent('tab-switcher:change', {
+					detail: { index: currentActiveIndex },
+					bubbles: true,
+				}),
+			);
+
+			// Удаляем обработчики
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		const isPointOverSlider = (x, y) => {
+			if (!slider || !controls) return false;
+			const sliderRect = slider.getBoundingClientRect();
+			return x >= sliderRect.left && x <= sliderRect.right &&
+			       y >= sliderRect.top && y <= sliderRect.bottom;
+		};
+
+		const handleMouseDown = (e) => {
+			if (!controls || !slider) return;
+			
+			// Проверяем, находится ли курсор над слайдером
+			if (!isPointOverSlider(e.clientX, e.clientY)) {
+				// Если клик не на слайдере, но на controls, разрешаем обычное поведение
+				return;
+			}
+			
+			isDragging = true;
+			const controlsRect = controls.getBoundingClientRect();
+			const sliderRect = slider.getBoundingClientRect();
+			
+			dragStartX = e.clientX;
+			dragStartOffset = sliderRect.left - controlsRect.left;
+			
+			slider.style.cursor = 'grabbing';
+			slider.style.transition = 'none';
+			
+			// Добавляем обработчики на document
+			document.addEventListener('mousemove', handleMouseMove);
+			document.addEventListener('mouseup', handleMouseUp);
+			
+			e.preventDefault();
+			e.stopPropagation();
+		};
+
+		// Добавляем обработчик на controls в фазе capture для перехвата событий до табов
+		if (controls) {
+			controls.addEventListener('mousedown', handleMouseDown, true);
+		}
+
+		// Также добавляем на слайдер для надежности
+		if (slider) {
+			slider.addEventListener('mousedown', handleMouseDown);
+		}
+
+		tabs.forEach((tab, i) => {
+			tab.addEventListener('click', () => setActive(i));
+		});
+
+		// Обновление позиции при изменении размера окна
+		let resizeTimeout;
+		window.addEventListener('resize', () => {
+			clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(() => {
+				if (!isDragging) {
+					updateSliderPosition(currentActiveIndex);
+				}
+			}, 100);
+		});
+	};
+
+		const mountAll = () => {
+			document
+				.querySelectorAll('[data-tab-switcher="true"]')
+				.forEach((root) => initTabSwitcher(root));
+		};
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', mountAll);
+		} else {
+			mountAll();
+		}
+	})();
+</script>
+
+<style>
+	.tab-switcher {
+		background: var(--color_00);
+		border: 1px solid var(--color_03);
+		padding: 5px;
+		display: flex;
+		flex-direction: column;
+		min-height: 35px;
+		width: fit-content;
+		min-width: 550px;
+	}
+
+	.tab-switcher-controls {
+		justify-content: center;
+		text-align: center;
+		display: flex;
+		align-items: center;
+		gap: 70px;
+		min-height: 35px;
+		position: relative;
+		cursor: grab;
+	}
+
+	.tab-switcher-controls:active {
+		cursor: grabbing;
+	}
+
+	.tab-switcher-slider {
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		background: var(--color_04);
+		border: 1px solid var(--color_03);
+		border-radius: 0;
+		z-index: 1;
+		transition: 
+			transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+			width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+		cursor: grab;
+		user-select: none;
+		pointer-events: auto;
+	}
+
+	.tab-switcher-slider:active {
+		cursor: grabbing;
+	}
+
+	.tab-switcher-tab {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		font-family: "Montserrat", sans-serif;
+		font-weight: 500;
+		font-size: 16px;
+		line-height: 1.3;
+		letter-spacing: 0;
+		color: var(--color_10);
+		cursor: pointer;
+		padding: 5px 15px;
+		border: 1px solid transparent;
+		background: transparent;
+		position: relative;
+		z-index: 2;
+		transition:
+			color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		pointer-events: auto;
+	}
+
+	.tab-switcher-tab.is-active {
+		border-color: transparent;
+	}
+
+	.tab-switcher-content-slot {
+		display: block;
+	}
+</style>
+

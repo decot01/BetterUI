@@ -1,0 +1,109 @@
+---
+export interface Props {
+  initialState?: boolean;
+  category: 'positions' | 'bases';
+}
+
+const { initialState = false, category } = Astro.props;
+---
+
+<div class="switch-wrapper">
+  <button class="switch-button" data-initial-state={initialState} data-category={category}>
+    <span class="state-segment on">On</span>
+    <span class="state-segment off">O<span style = "letter-spacing: 1px;">f</span>f</span>
+  </button>
+</div>
+
+<style>
+  .switch-wrapper {
+    display: inline-flex;
+    border-radius: 4px;
+    padding: 3px 0;
+  }
+
+  .switch-button {
+    display: flex;
+    background-color: #262626;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    align-items: center;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-weight: 700;
+    font-size: var(--fontSize_02);
+    height: 20px;
+    width: 62px;
+    transition: background-color 0.2s var(--easing_ExtremeInOut);
+  }
+
+  .state-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    width: 31px;
+    font-weight: 700;
+    font-size: var(--fontSize_02);
+    color: var(--color_06);
+    transition: transform 0.3s var(--easing_ExtremeInOut);
+  }
+
+  .switch-button:not([data-state='on']) .state-segment.off {
+    background-color: #FF4E4E;
+    animation: handle-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: black;
+  }
+  .switch-button:not([data-state='on']) .state-segment.on {
+    background-color: transparent;
+  }
+
+  .switch-button[data-state='on'] .state-segment.on {
+    background-color: #47B800;
+    animation: handle-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: black;
+  }
+  .switch-button[data-state='on'] .state-segment.off {
+    background-color: transparent;
+  }
+  @keyframes handle-pop {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(1.1);
+  }
+}
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.switch-button').forEach(button => {
+      let currentState = (button as HTMLElement).dataset.initialState === 'true';
+      const category = (button as HTMLElement).dataset.category;
+
+      const updateButtonState = () => {
+        if (currentState) {
+          (button as HTMLElement).dataset.state = 'on';
+        } else {
+          (button as HTMLElement).dataset.state = 'off';
+        }
+        // Отправляем кастомное событие при изменении состояния
+        button.dispatchEvent(new CustomEvent('switchChange', {
+          detail: {
+            category: category,
+            isOn: currentState
+          },
+          bubbles: true // Разрешить событию всплывать
+        }));
+      };
+
+      updateButtonState();
+
+      button.addEventListener('click', () => {
+        currentState = !currentState;
+        updateButtonState();
+      });
+    });
+  });
+</script>

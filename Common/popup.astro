@@ -1,0 +1,51 @@
+---
+interface Props {
+	text: string;
+	blinking?: boolean;
+    Svg: string;
+}
+
+const { text,Svg, blinking = false } = Astro.props;
+---
+
+<div class="popup">
+	<span class:list={[{ blinking }]}>{text}</span>
+    {Svg != null &&
+        <div class = "containerIcon" set:html = {Svg}></div>
+}
+
+</div>
+
+<style>
+	.popup {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 12px 6px;
+		background-color: var(--color_00);
+		color: var(--color_06);
+		border: 1px solid var(--color_03);
+		padding: 10px 24px;
+		font-size: 14px;
+        font-weight: 500;
+		width: 79px;
+		height: 29px;
+		box-sizing: border-box;
+		user-select: none;
+	}
+
+	.popup :global(svg) {
+		width: 24px;
+		height: 24px;
+	}
+
+	@keyframes blink {
+		50% {
+			opacity: 0.4;
+		}
+	}
+
+	.blinking {
+		animation: blink 1.5s ease-in-out infinite;
+	}
+</style>

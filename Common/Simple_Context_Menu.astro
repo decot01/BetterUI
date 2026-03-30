@@ -1,0 +1,123 @@
+---
+// Это упрощенная версия Context_Menu.astro без поддержки подменю,
+// чтобы избежать ошибки рекурсии при сборке.
+
+export interface MenuItem {
+  type: 'item' | 'separator';
+  label?: string;
+  shortcut?: string;
+  disabled?: boolean;
+  action?: string;
+}
+
+interface Props {
+  items: MenuItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="context-menu">
+  {items.map(item => {
+    if (item.type === 'separator') {
+      return <hr class="separator" />;
+    }
+
+    return (
+      <div class="menu-item-wrapper">
+        <div class="menu-item" data-action={item.action} class:list={{ 'is-disabled': item.disabled }}>
+          <span class="label">{item.label}</span>
+          {item.shortcut && <span class="shortcut">{item.shortcut}</span>}
+        </div>
+      </div>
+    );
+  })}
+</div>
+
+<script>
+  // Этот скрипт идентичен оригинальному компоненту Context_Menu
+  function initializeMenu(menuElement) {
+    if (menuElement.dataset.initialized) return;
+    menuElement.dataset.initialized = 'true';
+
+    menuElement.addEventListener('click', (e) => {
+      const target = e.target.closest('.menu-item');
+      if (target && !target.classList.contains('is-disabled') && target.dataset.action) {
+        const event = new CustomEvent('menuaction', {
+          bubbles: true,
+          composed: true,
+          detail: { action: target.dataset.action }
+        });
+        target.dispatchEvent(event);
+      }
+    });
+  }
+
+  document.querySelectorAll('.context-menu').forEach(initializeMenu);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) {
+          if (node.classList.contains('context-menu')) {
+            initializeMenu(node);
+          }
+          node.querySelectorAll('.context-menu').forEach(initializeMenu);
+        }
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+</script>
+
+
+<style>
+  .context-menu {
+    background-color: var(--color_00);
+    color: var(--color_10); 
+    font-size: 14px; 
+    padding: 6px; 
+    font-weight: 500; 
+    width: fit-content; 
+    border: 1px solid var(--color_03); 
+    user-select: none; 
+    z-index: 101; }
+
+  .menu-item-wrapper { 
+    position: relative; }
+
+  .menu-item { 
+    display: flex; 
+    align-items: center; 
+    padding: 8px 12px; 
+    background: none; 
+    border: none; 
+    color: inherit; 
+    text-align: left; 
+    cursor: pointer; 
+    white-space: nowrap; }
+
+  .menu-item:hover { 
+    background-color: var(--color_01); }
+
+  .menu-item.is-disabled { 
+    color: var(--color_04); 
+    cursor: not-allowed; 
+    background-color: transparent; }
+
+  .menu-item.is-disabled:hover { 
+    background-color: transparent; }
+
+  .label { 
+    flex-grow: 1; }
+
+  .shortcut { 
+    color: var(--color_04); 
+    margin-left: 24px; }
+
+  .separator { 
+    border: none; 
+    height: 1px; 
+    background-color: var(--color_02); 
+    margin: 6px 0; }
+</style>

@@ -1,0 +1,19 @@
+﻿---
+import TextHelper from "./TextHelper.astro";
+import { i18n } from '../../i18n'; // Убедитесь, что этот импорт присутствует
+
+const { t } = i18n; // Убедитесь, что t деструктурируется из i18n
+---
+
+<a class = "button login" href = "/Login">
+    <div class = "stroke"></div>
+    <div class = "fill"></div>
+    <div class = "raycast"></div>
+
+    <TextHelper Text = {t('login')} />
+
+    <TextHelper Text = "/"
+                TextClass = "separator"/>
+
+    <TextHelper Text = {t('signup')} />
+</a>

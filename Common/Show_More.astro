@@ -1,0 +1,114 @@
+---
+import { i18n } from '../../i18n';
+
+interface Props {
+	selector?: string; // CSS селектор для скрытых элементов (по умолчанию для changelog)
+	hiddenClass?: string; // Класс для скрытия элементов (по умолчанию 'changelog-entry-hidden')
+}
+
+const { 
+	selector = '[data-changelog-index]', 
+	hiddenClass = 'changelog-entry-hidden' 
+} = Astro.props;
+
+const t = i18n.t;
+const showMoreText = t('show_more');
+const showLessText = t('show_less');
+---
+
+<div class="show-more-container">
+  <div class="separator"></div>
+  <span 
+    class="show-more-text" 
+    data-expanded="false"
+    data-show-more-text={showMoreText}
+    data-show-less-text={showLessText}
+    data-selector={selector}
+    data-hidden-class={hiddenClass}
+  >
+    {showMoreText}
+  </span>
+  <div class="separator"></div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const showMoreTextEls = document.querySelectorAll('.show-more-text');
+
+    showMoreTextEls.forEach((showMoreTextEl) => {
+      // Получаем переводы из data-атрибутов
+      const showMoreText = showMoreTextEl.getAttribute('data-show-more-text') || 'Show more';
+      const showLessText = showMoreTextEl.getAttribute('data-show-less-text') || 'Show less';
+
+      // Получаем селектор и класс из data-атрибутов компонента
+      const itemSelector = showMoreTextEl.getAttribute('data-selector');
+      const itemHiddenClass = showMoreTextEl.getAttribute('data-hidden-class');
+
+    const getEntriesToToggle = () => {
+      if (!itemSelector) return [];
+      const allEntries = Array.from(document.querySelectorAll(itemSelector));
+
+      if (itemSelector.includes('data-changelog-index')) {
+        return allEntries.filter(entry => {
+          const index = parseInt(entry.getAttribute('data-changelog-index') || '0');
+          return index >= 8;
+        });
+      }
+
+      return allEntries;
+    };
+
+      showMoreTextEl.addEventListener('click', () => {
+        const isExpanded = showMoreTextEl.getAttribute('data-expanded') === 'true';
+
+        const entriesToToggle = getEntriesToToggle();
+        if (!isExpanded) {
+          // Разворачиваем - показываем все скрытые записи
+          entriesToToggle.forEach(entry => {
+            entry.classList.remove(itemHiddenClass || '');
+          });
+          showMoreTextEl.textContent = showLessText;
+          showMoreTextEl.setAttribute('data-expanded', 'true');
+        } else {
+          // Сворачиваем - скрываем записи
+          entriesToToggle.forEach(entry => {
+            entry.classList.add(itemHiddenClass || '');
+          });
+          showMoreTextEl.textContent = showMoreText;
+          showMoreTextEl.setAttribute('data-expanded', 'false');
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .show-more-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .separator {
+    width: 220px;
+    height: 1px;
+    background-color: var(--color_02);
+    flex-shrink: 0;
+  }
+
+  .show-more-text {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    color: var(--color_10);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: text-decoration 0.2s var(--easing_ExtremeInOut);
+  }
+
+  /* .show-more-text:hover {
+    text-decoration: underline;
+  } */
+</style>

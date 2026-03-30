@@ -1,0 +1,9 @@
+﻿---
+const Text: string = Astro.props.Text;
+const TextClass: string = Astro.props.TextClass || "text";
+---
+
+<div class = "container textHelper">
+    <div class = {TextClass} set:html = {Text}></div>
+    <div class = "helper"></div>
+</div>

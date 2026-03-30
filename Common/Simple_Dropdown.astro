@@ -1,0 +1,333 @@
+---
+/**
+ * Простой дропдаун по образу Simple_Context_Menu / Context_Menu.
+ * Триггер + панель со списком пунктов (без подменю). Для TierList, TacticalMap, SensitivityCalculator.
+ */
+import type { MenuItem } from './Simple_Context_Menu.astro';
+
+interface Props {
+  /** Пункты меню (item | separator). По умолчанию [] */
+  items?: MenuItem[];
+  /** Текст на триггере, если не передан слот */
+  label?: string;
+  /** Текущее выбранное значение (отображается на триггере) */
+  selectedValue?: string;
+  /** Плейсхолдер, когда ничего не выбрано */
+  placeholder?: string;
+  /** Максимальная высота панели (px) */
+  maxHeight?: number;
+  /** Компактный режим */
+  compact?: boolean;
+  /** Триггер в стиле ModuleBarButton (25px, как кнопки «Добавить модуль» / «Очистить все») */
+  triggerVariant?: 'default' | 'module-bar';
+  /** Идентификатор для связи с формой */
+  id?: string;
+}
+
+const {
+  items = [],
+  label = '',
+  selectedValue,
+  placeholder = 'Выберите...',
+  maxHeight = 280,
+  compact = false,
+  triggerVariant = 'default',
+  id,
+} = Astro.props;
+
+const triggerText = selectedValue ?? label ?? placeholder;
+---
+
+<div
+  class="simple-dropdown"
+  class:list={[
+    compact && 'simple-dropdown--compact',
+    triggerVariant === 'module-bar' && 'simple-dropdown--module-bar-trigger',
+  ]}
+  data-dropdown
+  id={id}
+>
+  <button
+    type="button"
+    class="simple-dropdown__trigger"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    aria-label={triggerText}
+  >
+    <span class="simple-dropdown__trigger-text">{triggerText}</span>
+    <svg class="simple-dropdown__chevron" width="10" height="7" viewBox="0 0 10 7" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M0.707153 0.707031L4.94979 4.94967L9.19243 0.707031" stroke="currentColor" stroke-width="2" />
+    </svg>
+  </button>
+  <div
+    class="simple-dropdown__panel"
+    role="listbox"
+    hidden
+    style={`--simple-dropdown-max-height: ${maxHeight}px`}
+  >
+    <div class="simple-dropdown__menu">
+      {items.map((item) => {
+        if (item.type === 'separator') {
+          return <hr class="simple-dropdown__separator" />;
+        }
+        return (
+          <div class="simple-dropdown__item-wrapper">
+            <div
+              class="simple-dropdown__item"
+              class:list={{ 'is-disabled': item.disabled }}
+              role="option"
+              data-action={item.action}
+              data-label={item.label}
+            >
+              <span class="simple-dropdown__label">{item.label}</span>
+              {item.shortcut && <span class="simple-dropdown__shortcut">{item.shortcut}</span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</div>
+
+<script>
+  function initSimpleDropdown(root: HTMLElement) {
+    if (root.dataset.dropdownInit === 'true') return;
+    const trigger = root.querySelector('.simple-dropdown__trigger');
+    const panel = root.querySelector('.simple-dropdown__panel');
+    if (!trigger || !panel) return;
+    root.dataset.dropdownInit = 'true';
+    const triggerEl = trigger as HTMLElement;
+    const panelEl = panel as HTMLElement;
+
+    function open() {
+      panelEl.removeAttribute('hidden');
+      triggerEl.setAttribute('aria-expanded', 'true');
+      root.classList.add('is-open');
+      document.addEventListener('click', closeOnClickOutside);
+    }
+
+    function close() {
+      panelEl.setAttribute('hidden', '');
+      triggerEl.setAttribute('aria-expanded', 'false');
+      root.classList.remove('is-open');
+      document.removeEventListener('click', closeOnClickOutside);
+    }
+
+    function closeOnClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (root.contains(target)) return;
+      close();
+    }
+
+    triggerEl.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = root.classList.contains('is-open');
+      if (isOpen) close();
+      else open();
+    });
+
+    panelEl.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest('.simple-dropdown__item');
+      if (!item || item.classList.contains('is-disabled')) return;
+      e.preventDefault();
+      const action = item.getAttribute('data-action');
+      const label = item.getAttribute('data-label') ?? '';
+      close();
+      root.dispatchEvent(
+        new CustomEvent('dropdownselect', {
+          bubbles: true,
+          composed: true,
+          detail: { action, label },
+        })
+      );
+      root.dispatchEvent(
+        new CustomEvent('menuaction', {
+          bubbles: true,
+          composed: true,
+          detail: { action },
+        })
+      );
+    });
+  }
+
+  function runInit() {
+    document.querySelectorAll('[data-dropdown]').forEach((el) => initSimpleDropdown(el as HTMLElement));
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', runInit);
+    } else {
+      runInit();
+    }
+    // повторная инициализация для динамически добавленных дропдаунов
+    const observer = new MutationObserver(() => {
+      runInit();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+</script>
+
+<style>
+  .simple-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  .simple-dropdown__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 140px;
+    padding: 8px 12px;
+    background-color: var(--color_00);
+    border: 1px solid var(--color_03);
+    color: var(--color_10);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s var(--easing_ExtremeInOut), background-color 0.2s var(--easing_ExtremeInOut);
+  }
+
+  .simple-dropdown__trigger:hover {
+    border-color: var(--color_04);
+    background-color: var(--color_02);
+  }
+
+  /* Триггер как ModuleBarButton: 25px, один ряд с остальными кнопками */
+  .simple-dropdown--module-bar-trigger .simple-dropdown__trigger {
+    height: 25px;
+    min-width: auto;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .simple-dropdown--module-bar-trigger .simple-dropdown__trigger-text {
+    white-space: nowrap;
+  }
+
+  .simple-dropdown__trigger-text {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .simple-dropdown__chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s var(--easing_ExtremeInOut);
+  }
+
+  .simple-dropdown.is-open .simple-dropdown__chevron {
+    transform: rotate(180deg);
+  }
+
+  .simple-dropdown__panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    z-index: 101;
+    min-width: 100%;
+    box-sizing: border-box;
+    transition: opacity 0.2s var(--easing_ExtremeInOut), visibility 0s linear 0.2s;
+  }
+
+  .simple-dropdown__panel[hidden] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .simple-dropdown__menu {
+    background-color: var(--color_00);
+    border: 1px solid var(--color_03);
+    padding: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    width: fit-content;
+    min-width: 100%;
+    max-height: var(--simple-dropdown-max-height, 280px);
+    overflow-y: auto;
+    user-select: none;
+  }
+
+  .simple-dropdown--compact .simple-dropdown__menu {
+    padding: 4px;
+    font-size: 12px;
+  }
+
+  .simple-dropdown__item-wrapper {
+    position: relative;
+  }
+
+  .simple-dropdown__item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .simple-dropdown__item:hover {
+    background-color: var(--color_01);
+  }
+
+  .simple-dropdown__item.is-disabled {
+    color: var(--color_04);
+    cursor: not-allowed;
+    background-color: transparent;
+  }
+
+  .simple-dropdown__item.is-disabled:hover {
+    background-color: transparent;
+  }
+
+  .simple-dropdown--compact .simple-dropdown__item {
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  .simple-dropdown__label {
+    flex-grow: 1;
+  }
+
+  .simple-dropdown__shortcut {
+    color: var(--color_04);
+    margin-left: 24px;
+  }
+
+  .simple-dropdown__separator {
+    border: none;
+    height: 1px;
+    background-color: var(--color_02);
+    margin: 6px 0;
+  }
+
+  .simple-dropdown__menu::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .simple-dropdown__menu::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .simple-dropdown__menu::-webkit-scrollbar-thumb {
+    background: var(--color_03);
+    border-radius: 0;
+  }
+
+  .simple-dropdown__menu::-webkit-scrollbar-thumb:hover {
+    background: var(--color_04);
+  }
+</style>
